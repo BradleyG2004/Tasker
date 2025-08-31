@@ -1,13 +1,15 @@
-import type { Route } from "./+types/home";
-import { Welcome } from "../welcome/welcome";
+import { Link, useNavigate, redirect } from "react-router-dom";
 
-export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "New React Router App" },
-    { name: "description", content: "Welcome to React Router!" },
-  ];
+
+export async function loader() {
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      return redirect("/");
+    }
+  }
+  return null;
 }
-
 export default function Home() {
-  return <Welcome />;
+  return <span>Home page / Dashboard</span>;
 }

@@ -1,0 +1,169 @@
+import { useState } from "react";
+import jwtDecode from "jwt-decode";
+import { Link, useNavigate, redirect } from "react-router-dom";
+import toast, { Toaster } from 'react-hot-toast';
+
+
+// export async function loader() {
+//     if (typeof window !== "undefined") {
+//     const token = localStorage.getItem("accessToken");
+//     if (token) {
+//       return redirect("/");
+//     }
+//   }
+// }
+
+export async function loader() {
+    const token = localStorage.getItem("accessToken");
+
+    if (token) {
+        try {
+            const { exp } = jwtDecode<{ exp: number }>(token);
+            const now = Date.now() / 1000;
+            if (exp > now) {
+                // access token valide
+                return redirect("/");
+            }
+            // sinon access token expiré → on va checker le refresh token
+        } catch (err) {
+            console.log("Access token invalid:", err);
+        }
+    }
+
+    // Vérifier refresh token côté serveur
+    try {
+        const apiUrl = import.meta.env.VITE_REGISTER_URL as string;
+        const res = await fetch(`${apiUrl}/auth-refresh`, {
+            method: "GET",
+            credentials: "include",
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            // remplacer l'access token dans localStorage
+            localStorage.setItem("accessToken", data.accessToken);
+            return redirect("/");
+        }
+    } catch (err) {
+        console.log("Refresh token invalid or not present");
+    }
+
+    // pas connecté
+    return null;
+}
+
+export default function LoginPage() {
+    const navigate = useNavigate();
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+
+    const onSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        const formData = {
+            email,
+            password,
+        };
+
+        const apiUrl = import.meta.env.VITE_REGISTER_URL as string;
+
+        fetch(`${apiUrl}/login`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(formData),
+            credentials: "include",
+        })
+            .then((response) => {
+                if (response.status != 200) {
+                    throw new Error("Failed to log");
+                }
+                return response.json();
+            })
+            .then((response) => {
+                toast.success("Registration successful!");
+                localStorage.setItem("accessToken", response.accessToken)
+                navigate("/");
+            })
+            .catch((error) => {
+                console.log(error)
+                toast.error("Failed to log");
+            });
+    };
+
+    return (
+        <div className="bg-base-100 rounded-2xl shadow-xl flex w-full max-w-4xl overflow-hidden corePan">
+            {/* Formulaire */}
+            <div className="w-full md:w-3/4 py-4 px-7 flex flex-col justify-center" style={{ fontFamily: 'Courier New, Courier, monospace' }}>
+                <h1 className="text-3xl font-bold mb-2 text-center booker-title" style={{ color: 'black' }}>Connection</h1>
+                <hr className="w-1/2 mx-auto mb-4" style={{ color: 'black' }} />
+                <form onSubmit={onSubmit}>
+                    <div className="mb-4">
+                        <label className="label">
+                            <span className="label-text">Email</span>
+                        </label>
+                        <input
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            type="text"
+                            placeholder="mike142@yourmail.com"
+                            className="input input-bordered w-full"
+                        />
+                    </div>
+                    <div className="mb-2">
+                        <label className="label">
+                            <span className="label-text">Password</span>
+                        </label>
+                        <div className="relative">
+                            <input
+                                type={showPassword ? 'text' : 'password'}
+                                placeholder="********"
+                                className="input input-bordered w-full pr-10"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500"
+                            >
+                                {showPassword ? (
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                ) : (
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor" className="w-5 h-5">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.956 9.956 0 012.293-3.95m3.249-2.383A9.956 9.956 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.973 9.973 0 01-4.043 5.306M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                            d="M3 3l18 18" />
+                                    </svg>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                    <div className="flex items-center mb-4" style={{ visibility: 'hidden' }}>
+                        <input type="checkbox" className="checkbox checkbox-sm mr-2" />
+                        <span className="text-sm">Remember me</span>
+                    </div>
+                    <button className="btn w-full mb-2" type="submit" style={{ backgroundColor: 'black', color: 'white' }}>Log me in</button>
+
+                    <p className="mb-6 text-sm" style={{ justifySelf: 'center' }}>
+                        or <Link to="/auth/register" style={{ color: 'black', fontWeight: 'bold' }}>register</Link>
+                    </p>
+                </form>
+            </div>
+            {/* Illustration */}
+            <div className="hidden md:flex w-1/2 bg-base-200 items-center justify-center">
+                <img src="../public/image.png" alt="logo" className="w-full h-full object-cover" />
+            </div>
+        </div>
+    );
+}

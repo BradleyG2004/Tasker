@@ -1,18 +1,68 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { jwtDecode } from "jwt-decode";
 import { Link, redirect, useNavigate } from "react-router-dom";
 import toast, { Toaster } from 'react-hot-toast';
+
+export function useRequireGuest() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      try {
+        const { exp } = jwtDecode<{ exp: number }>(token);
+        const now = Date.now() / 1000;
+        if (exp > now) {
+          navigate("/"); // redirect si token valide
+        }
+      } catch { }
+    }
+  }, [navigate]);
+}
 
 export async function loader() {
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("accessToken");
+
     if (token) {
-      return redirect("/");
+      try {
+        const { exp } = jwtDecode<{ exp: number }>(token);
+        const now = Date.now() / 1000;
+        if (exp > now) {
+          // access token valide
+          return redirect("/");
+        }
+        // sinon access token expiré → on va checker le refresh token
+      } catch (err) {
+        console.log("Access token invalid:", err);
+      }
     }
+
+    // Vérifier refresh token côté serveur
+    try {
+      const apiUrl = import.meta.env.VITE_REGISTER_URL as string;
+      const res = await fetch(`${apiUrl}/chk_refresh`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (res.status == 200) {
+        const data = await res.json();
+        // remplacer l'access token dans localStorage
+        localStorage.setItem("accessToken", data.accessToken);
+        return redirect("/");
+      }
+    } catch (err) {
+      console.log("Refresh token invalid or not present");
+    }
+
+    return redirect("/auth/login");
   }
-  return null;
 }
 
 export default function RegisterPage() {
+  useRequireGuest();
+
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [emailConf, setEmailConf] = useState("");

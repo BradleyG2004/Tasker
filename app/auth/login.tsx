@@ -1,58 +1,69 @@
-import { useState } from "react";
-import jwtDecode from "jwt-decode";
+import { useState, useEffect } from "react";
+import { jwtDecode } from "jwt-decode";
 import { Link, useNavigate, redirect } from "react-router-dom";
 import toast, { Toaster } from 'react-hot-toast';
 
 
-// export async function loader() {
-//     if (typeof window !== "undefined") {
-//     const token = localStorage.getItem("accessToken");
-//     if (token) {
-//       return redirect("/");
-//     }
-//   }
-// }
+export function useRequireGuest() {
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const token = localStorage.getItem("accessToken");
+        if (token) {
+            try {
+                const { exp } = jwtDecode<{ exp: number }>(token);
+                const now = Date.now() / 1000;
+                if (exp > now) {
+                    navigate("/"); // redirect si token valide
+                }
+            } catch { }
+        }
+    }, [navigate]);
+}
 
 export async function loader() {
-    const token = localStorage.getItem("accessToken");
+    if (typeof window !== "undefined") {
+        const token = localStorage.getItem("accessToken");
 
-    if (token) {
+        if (token) {
+            try {
+                const { exp } = jwtDecode<{ exp: number }>(token);
+                const now = Date.now() / 1000;
+                if (exp > now) {
+                    // access token valide
+                    return redirect("/");
+                }
+                // sinon access token expiré → on va checker le refresh token
+            } catch (err) {
+                console.log("Access token invalid:", err);
+            }
+        }
+
+        // Vérifier refresh token côté serveur
         try {
-            const { exp } = jwtDecode<{ exp: number }>(token);
-            const now = Date.now() / 1000;
-            if (exp > now) {
-                // access token valide
+            const apiUrl = import.meta.env.VITE_REGISTER_URL as string;
+            const res = await fetch(`${apiUrl}/chk_refresh`, {
+                method: "GET",
+                credentials: "include",
+            });
+
+            if (res.status == 200) {
+                const data = await res.json();
+                // remplacer l'access token dans localStorage
+                localStorage.setItem("accessToken", data.accessToken);
                 return redirect("/");
             }
-            // sinon access token expiré → on va checker le refresh token
         } catch (err) {
-            console.log("Access token invalid:", err);
+            console.log("Refresh token invalid or not present");
         }
+
+        return redirect("/auth/login");
     }
-
-    // Vérifier refresh token côté serveur
-    try {
-        const apiUrl = import.meta.env.VITE_REGISTER_URL as string;
-        const res = await fetch(`${apiUrl}/auth-refresh`, {
-            method: "GET",
-            credentials: "include",
-        });
-
-        if (res.ok) {
-            const data = await res.json();
-            // remplacer l'access token dans localStorage
-            localStorage.setItem("accessToken", data.accessToken);
-            return redirect("/");
-        }
-    } catch (err) {
-        console.log("Refresh token invalid or not present");
-    }
-
-    // pas connecté
-    return null;
 }
 
 export default function LoginPage() {
+    useRequireGuest();
+
     const navigate = useNavigate();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -83,7 +94,7 @@ export default function LoginPage() {
                 return response.json();
             })
             .then((response) => {
-                toast.success("Registration successful!");
+                toast.success("Login successful!");
                 localStorage.setItem("accessToken", response.accessToken)
                 navigate("/");
             })

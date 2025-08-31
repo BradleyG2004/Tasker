@@ -15,6 +15,7 @@
     "cors": "^2.8.5",
     "daisyui": "^5.0.54",
     "isbot": "^5.1.27",
+    "jwt-decode": "^4.0.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-hot-toast": "^2.6.0",

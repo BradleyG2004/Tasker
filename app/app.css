@@ -14,3 +14,22 @@
   left: 50%;
   transform: translate(-50%, -50%);
 }
+
+.titlee{
+  color: #000000;
+  font-size:15px;
+  -webkit-text-stroke: 1px #000;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.titlee1{
+  color: #000000;
+  font-size:25px;
+  -webkit-text-stroke: 1px #000;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.titlee2{
+  color: #422ad5;
+  font-family: 'Courier New', Courier, monospace;
+}

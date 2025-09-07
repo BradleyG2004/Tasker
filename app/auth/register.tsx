@@ -5,59 +5,56 @@ import toast, { Toaster } from 'react-hot-toast';
 
 export function useRequireGuest() {
   const navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
+
 
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    if (token) {
-      try {
-        const { exp } = jwtDecode<{ exp: number }>(token);
-        const now = Date.now() / 1000;
-        if (exp > now) {
-          navigate("/"); // redirect si token valide
-        }
-      } catch { }
-    }
-  }, [navigate]);
-}
-
-export async function loader() {
-  if (typeof window !== "undefined") {
+  const checkAuth = async () => {
     const token = localStorage.getItem("accessToken");
 
     if (token) {
       try {
         const { exp } = jwtDecode<{ exp: number }>(token);
         const now = Date.now() / 1000;
+
         if (exp > now) {
-          // access token valide
-          return redirect("/");
+          // Token valide → redirect home
+          navigate("/");
+          return;
         }
-        // sinon access token expiré → on va checker le refresh token
       } catch (err) {
-        console.log("Access token invalid:", err);
+        console.log("Access token corrompu:", err);
       }
     }
 
-    // Vérifier refresh token côté serveur
+    // Sinon → tenter refresh
     try {
       const apiUrl = import.meta.env.VITE_REGISTER_URL as string;
-      const res = await fetch(`${apiUrl}/chk_refresh`, {
+      const res = await fetch(`${apiUrl}/check_refresh`, {
         method: "GET",
         credentials: "include",
       });
 
-      if (res.status == 200) {
+      if (res.ok) {
         const data = await res.json();
-        // remplacer l'access token dans localStorage
         localStorage.setItem("accessToken", data.accessToken);
-        return redirect("/");
+        // Token valide → redirect home
+        navigate("/");
+        return;
       }
     } catch (err) {
-      console.log("Refresh token invalid or not present");
+      console.log("Erreur check_refresh:", err);
     }
 
-    return redirect("/auth/login");
-  }
+    // Si on arrive ici → pas connecté → on laisse afficher la page login
+    setLoading(false);
+  };
+
+  checkAuth();
+}, [navigate]);
+
+// Pendant qu'on vérifie → afficher "Chargement"
+if (loading) return <p>Chargement...</p>;
 }
 
 export default function RegisterPage() {
@@ -121,7 +118,7 @@ export default function RegisterPage() {
     <div className="bg-base-100 rounded-2xl shadow-xl flex w-full max-w-4xl overflow-hidden corePan">
       {/* Formulaire */}
       <div className="w-full md:w-3/4 py-4 px-7 flex flex-col justify-center" style={{ fontFamily: 'Courier New, Courier, monospace' }}>
-        <h1 className="text-3xl font-bold mb-2 text-center booker-title" style={{ color: 'black' }}>Registration</h1>
+        <h1 className="text-3xl font-bold mb-2 text-center booker-title titlee1" style={{ color: 'black' }}>Registration</h1>
         <hr className="w-1/2 mx-auto mb-4" style={{ color: 'black' }} />
         <form onSubmit={onSubmit}>
           <div className="mb-4">
@@ -226,9 +223,8 @@ export default function RegisterPage() {
             </div>
           </div>
           <button className="btn w-full mb-2" type="submit" style={{ backgroundColor: 'black', color: 'white' }}>Register</button>
-
           <p className="mb-6 text-sm" style={{ justifySelf: 'center' }}>
-            or <Link to="/auth/log" style={{ color: 'black', fontWeight: 'bold' }}>Log me in</Link>
+            or <Link to="/auth/login" style={{ color: 'black', fontWeight: 'bold' }}>Log me in</Link>
           </p>
         </form>
       </div>

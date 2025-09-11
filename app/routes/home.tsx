@@ -13,15 +13,49 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [confirmDropOpen, setConfirmDropOpen] = useState(false);
   const [taskLists, setTaskLists] = useState([]);
   const [options, setOptions] = useState([]);
   const [listName, setListName] = useState("");
   const [selectedList, setSelectedList] = useState<any>(null);
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [achievedTasksOpen, setAchievedTasksOpen] = useState(false);
   const [taskData, setTaskData] = useState({
     shortDesc: "",
     longDesc: "",
     deadline: ""
   });
+
+  const handleDropList = async () => {
+    if (!selectedList) {
+      toast.error("Please select a list first");
+      return;
+    }
+    try {
+      const apiUrl = import.meta.env.VITE_REGISTER_URL as string;
+      const accessToken = localStorage.getItem("accessToken");
+      const res = await fetch(`${apiUrl}/list`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ id: selectedList.id }),
+        credentials: "include",
+      });
+      if (res.status === 200) {
+        toast.success("List dropped successfully");
+        setConfirmDropOpen(false);
+        setSelectedList(null);
+        fetchTaskLists();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || "Failed to drop list");
+      }
+    } catch (err) {
+      toast.error("Erreur lors de la suppression de la liste");
+    }
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -96,6 +130,61 @@ export default function Home() {
     }
   };
 
+  const fetchTasks = async (listId: number) => {
+    try {
+      const apiUrl = import.meta.env.VITE_REGISTER_URL as string;
+      const accessToken = localStorage.getItem("accessToken");
+
+      const res = await fetch(`${apiUrl}/list/${listId}/tasks`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        credentials: "include",
+      });
+
+      if (res.status === 200) {
+        const data = await res.json();
+        setTasks(data.tasks);
+      } else {
+        toast.error("Erreur lors du chargement des tâches");
+      }
+    } catch (err) {
+      toast.error("Erreur lors du chargement des tâches");
+    }
+  };
+
+  const toggleTaskAchievement = async (taskId: number, isAchieved: boolean) => {
+    try {
+      const apiUrl = import.meta.env.VITE_REGISTER_URL as string;
+      const accessToken = localStorage.getItem("accessToken");
+
+      const res = await fetch(`${apiUrl}/task/${taskId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ isAchieved: !isAchieved }),
+        credentials: "include",
+      });
+
+      if (res.status === 200) {
+        // Update local state
+        setTasks(prevTasks => 
+          prevTasks.map(task => 
+            task.id === taskId ? { ...task, isAchieved: !isAchieved } : task
+          )
+        );
+        toast.success(isAchieved ? "Task marked as undone" : "Task marked as done");
+      } else {
+        toast.error("Failed to update task");
+      }
+    } catch (err) {
+      toast.error("Erreur lors de la mise à jour de la tâche");
+    }
+  };
+
   useEffect(() => {
     fetchTaskLists();
   }, []);
@@ -162,6 +251,7 @@ export default function Home() {
         setTaskModalOpen(false);
         setTaskData({ shortDesc: "", longDesc: "", deadline: "" });
         fetchTaskLists(); // Recharge les listes pour mettre à jour les tâches
+        fetchTasks(selectedList.id); // Recharge les tâches de la liste sélectionnée
       } else {
         toast.error("Failed to create task");
       }
@@ -215,7 +305,11 @@ export default function Home() {
               onChange={(selectedOption: any) => {
                 if (selectedOption) {
                   setSelectedList(selectedOption.value);
-                  console.log(selectedOption.value);
+                  fetchTasks(selectedOption.value.id);
+                  setAchievedTasksOpen(false);
+                } else {
+                  setSelectedList(null);
+                  setTasks([]);
                 }
               }}
               placeholder="Select a list..."
@@ -251,78 +345,78 @@ export default function Home() {
         </div>
       )}
       {/* Titre centré */}
-      <div className="absolute top-8 left-1/2 -translate-x-1/2 text-2xl font-handwriting shadow-md" style={{ borderRadius: "6px", width: "90%", padding: "10px",fontSize:"px",fontFamily:"courier new" }}>
+      <div className="absolute top-8 left-1/2 -translate-x-1/2 text-2xl font-handwriting shadow-md" style={{ borderRadius: "6px", width: "90%", padding: "10px", fontSize: "px", fontFamily: "courier new" }}>
         {selectedList ? (
           <>
-            <div style={{textAlign:"center", display:"block"}}>
+            <div style={{ textAlign: "center", display: "block" }}>
               <ShimmeringText
                 text={selectedList.name}
                 duration={2}
                 wave={true}
                 shimmeringColor="hsl(var(--primary))"
-                style={{fontSize:"30px",fontWeight:"bold"}}
+                style={{ fontSize: "30px", fontWeight: "bold" }}
               />
             </div>
-            <hr  style={{marginTop:"10px"}}></hr>
-            <div className="grid grid-cols-4 gap-2" style={{marginTop:"10px"}}>
+            <hr style={{ marginTop: "10px" }}></hr>
+            <div className="grid grid-cols-4 gap-2" style={{ marginTop: "10px" }}>
               <div>
-                <b><span style={{fontSize:"20px",fontWeight:"bold",color:"red"}}>Created at : </span>
+                <b><span style={{ fontSize: "20px", fontWeight: "bold", color: "red" }}>Created at : </span>
                   <ShimmeringText
                     text={new Date(selectedList.createdAt).toLocaleDateString()}
                     duration={2}
                     wave={true}
                     shimmeringColor="hsl(var(--primary))"
-                    style={{fontSize:"20px",fontWeight:"bold"}}
+                    style={{ fontSize: "20px", fontWeight: "bold" }}
                   />
-                  </b>
+                </b>
               </div>
               <div>
-                <b><span style={{fontSize:"20px",fontWeight:"bold",color:"red"}}>Task Total : </span>
+                <b><span style={{ fontSize: "20px", fontWeight: "bold", color: "red" }}>Task Total : </span>
                   <ShimmeringText
                     text={selectedList.tasks ? selectedList.tasks.length.toString() : "0"}
                     duration={2}
                     wave={true}
                     shimmeringColor="hsl(var(--primary))"
-                    style={{fontSize:"20px",fontWeight:"bold"}}
+                    style={{ fontSize: "20px", fontWeight: "bold" }}
                   />
-                  </b>
+                </b>
               </div>
                <div>
-                <b><span style={{fontSize:"20px",fontWeight:"bold",color:"red"}}>Task Closed : </span>
+                <b><span style={{ fontSize: "20px", fontWeight: "bold", color: "red" }}>Task Closed : </span>
                   <ShimmeringText
                     text={selectedList.tasks ? selectedList.tasks.filter((task: any) => task.isAchieved).length.toString() : "0"}
                     duration={2}
                     wave={true}
                     shimmeringColor="hsl(var(--primary))"
-                    style={{fontSize:"20px",fontWeight:"bold"}}
+                    style={{ fontSize: "20px", fontWeight: "bold" }}
                   />
-                  </b>
+                </b>
               </div>
               <div>
-                <b><span style={{fontSize:"20px",fontWeight:"bold",color:"red"}}>Task still open : </span>
+                <b><span style={{ fontSize: "20px", fontWeight: "bold", color: "red" }}>Task still open : </span>
                   <ShimmeringText
                     text={selectedList.tasks ? (selectedList.tasks.length - selectedList.tasks.filter((task: any) => task.isAchieved).length).toString() : "0"}
                     duration={2}
                     wave={true}
                     shimmeringColor="hsl(var(--primary))"
-                    style={{fontSize:"20px",fontWeight:"bold"}}
+                    style={{ fontSize: "20px", fontWeight: "bold" }}
                   />
-                  </b>
+                </b>
               </div>
             </div>
           </>
         ) : (
           <>
-            <b style={{textAlign:"center",color:"red",fontSize:"20px",fontWeight:"bold", display:"block"}}>
-            <ShimmeringText
+            <b style={{ textAlign: "center", color: "red", fontSize: "20px", fontWeight: "bold", display: "block" }}>
+              <ShimmeringText
                 text="Select a list in the left menu"
                 duration={2}
                 wave={true}
                 shimmeringColor="hsl(var(--primary))"
-                style={{fontSize:"20px",fontWeight:"bold"}}
+                style={{ fontSize: "20px", fontWeight: "bold" }}
               /></b>
-            <hr  style={{marginTop:"10px"}}></hr>
-            <div className="grid grid-cols-4 gap-2" style={{marginTop:"10px"}}>
+            <hr style={{ marginTop: "10px" }}></hr>
+            <div className="grid grid-cols-4 gap-2" style={{ marginTop: "10px" }}>
               <div>
                 <b>Created at : -</b>
               </div>
@@ -340,30 +434,165 @@ export default function Home() {
         )}
       </div>
       
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <button 
-            className="btn w-full titlee2" 
-            type="submit" 
-            style={{ 
-              backgroundColor: selectedList ? 'black' : 'gray', 
-              color: 'white', 
-              width: '200px',
-              cursor: selectedList ? 'pointer' : 'not-allowed'
-            }}
-            disabled={!selectedList}
-            onClick={() => setTaskModalOpen(true)}
-          >
-            New task
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
-            </svg>
-          </button>
+      {/* Task Display Grid - Side by side layout with fixed dimensions */}
+      {selectedList && (
+        <div className="mt-8" style={{ width: '90%', margin: '20px auto' }}>
+          <div className="flex gap-6" style={{ height: '500px' }}>
+            {/* Active Tasks - Left side */}
+            <div className="flex-1 flex flex-col" style={{ marginTop: '40px' }}>
+              <div 
+                className="flex-1 overflow-y-auto pr-2"
+                style={{ 
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: '#cbd5e0 #f7fafc'
+                }}
+              >
+                <div className="grid grid-cols-2 gap-4">
+                  {tasks.filter(task => !task.isAchieved).map((task) => (
+                    <div key={task.id} className="card bg-white shadow-md border-2 border-gray-200">
+                      <div className="card-body p-4">
+                        <h4 className="card-title text-lg font-bold" style={{ fontFamily: 'Courier New' }}>
+                          {task.shortDesc}
+                        </h4>
+                        {task.longDesc && (
+                          <p className="text-sm text-gray-600 mb-2" style={{ fontFamily: 'Courier New' }}>
+                            {task.longDesc}
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-500 mb-3" style={{ fontFamily: 'Courier New' }}>
+                          Due: {new Date(task.Deadline).toLocaleDateString()} {new Date(task.Deadline).toLocaleTimeString()}
+                        </p>
+                        <div className="card-actions justify-end">
+                          <button
+                            className="btn btn-sm btn-success"
+                            onClick={() => toggleTaskAchievement(task.id, task.isAchieved)}
+                            style={{ fontFamily: 'Courier New' }}
+                          >
+                            Mark as Done
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Completed Tasks - Right side */}
+            <div className="w-80 flex flex-col" style={{ marginTop: '40px' }}>
+              <div 
+                className="bg-white rounded-lg shadow-md border-2 border-gray-200 flex flex-col transition-all duration-300 ease-in-out"
+                style={{ 
+                  height: achievedTasksOpen ? '300px' : '60px',
+                  overflow: 'hidden'
+                }}
+              >
+                <div 
+                  className="p-4 cursor-pointer flex justify-between items-center flex-shrink-0"
+                  onClick={() => setAchievedTasksOpen(!achievedTasksOpen)}
+                  style={{ fontFamily: 'Courier New' }}
+                >
+                  <h3 className="text-xl font-bold">
+                    Completed Tasks ({tasks.filter(task => task.isAchieved).length})
+                  </h3>
+                  <button className="btn btn-circle btn-sm">
+                    <svg 
+                      className={`w-4 h-4 transition-transform ${achievedTasksOpen ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
+                <div 
+                  className="border-t border-gray-200 p-4 flex-1 overflow-y-auto"
+                  style={{ 
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: '#cbd5e0 #f7fafc',
+                    opacity: achievedTasksOpen ? 1 : 0,
+                    transition: 'opacity 0.3s ease-in-out'
+                  }}
+                >
+                  {tasks.filter(task => task.isAchieved).length > 0 ? (
+                    <div className="space-y-4">
+                      {tasks.filter(task => task.isAchieved).map((task) => (
+                        <div key={task.id} className="card bg-gray-50 shadow-sm border border-gray-300">
+                          <div className="card-body p-4">
+                            <h4 className="card-title text-lg font-bold line-through text-gray-600" style={{ fontFamily: 'Courier New' }}>
+                              {task.shortDesc}
+                            </h4>
+                            {task.longDesc && (
+                              <p className="text-sm text-gray-500 mb-2 line-through" style={{ fontFamily: 'Courier New' }}>
+                                {task.longDesc}
+                              </p>
+                            )}
+                            <p className="text-xs text-gray-400 mb-3" style={{ fontFamily: 'Courier New' }}>
+                              Completed: {new Date(task.Deadline).toLocaleDateString()}
+                            </p>
+                            <div className="card-actions justify-end">
+                              <button
+                                className="btn btn-sm btn-warning"
+                                onClick={() => toggleTaskAchievement(task.id, task.isAchieved)}
+                                style={{ fontFamily: 'Courier New' }}
+                              >
+                                Mark as Undone
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center text-gray-500" style={{ fontFamily: 'Courier New' }}>
+                      No completed tasks
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div><button className="btn w-full titlee2" type="submit" style={{color: 'red', width: '200px' }}>Drop me<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
+      )}
+
+      {/* Buttons positioned at bottom right */}
+      <div className="absolute bottom-4 right-4 flex gap-4">
+        <button
+          className="btn titlee2"
+          type="submit"
+          style={{
+            backgroundColor: selectedList ? 'black' : 'gray',
+            color: 'white',
+            width: '150px',
+            cursor: selectedList ? 'pointer' : 'not-allowed'
+          }}
+          disabled={!selectedList}
+          onClick={() => setTaskModalOpen(true)}
+        >
+          New task
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+        </svg>
+        </button>
+        <button
+          className="btn titlee2"
+          type="button"
+          style={{
+            color: selectedList ? 'red' : 'white',
+            backgroundColor: selectedList ? undefined : 'gray',
+            width: '150px',
+            cursor: selectedList ? 'pointer' : 'not-allowed'
+          }}
+          disabled={!selectedList}
+          onClick={() => setConfirmDropOpen(true)}
+        >
+          Drop me
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
           <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
         </svg>
-        </button></div></div>
+        </button>
+      </div>
 
       {/* Modale pour créer une liste */}
       {modalOpen && (
@@ -415,7 +644,7 @@ export default function Home() {
                   className="input input-bordered w-full"
                   placeholder="Enter short description"
                   value={taskData.shortDesc}
-                  onChange={(e) => setTaskData({...taskData, shortDesc: e.target.value})}
+                  onChange={(e) => setTaskData({ ...taskData, shortDesc: e.target.value })}
                   required
                 />
               </div>
@@ -426,7 +655,7 @@ export default function Home() {
                   className="textarea textarea-bordered w-full"
                   placeholder="Enter long description (optional)"
                   value={taskData.longDesc}
-                  onChange={(e) => setTaskData({...taskData, longDesc: e.target.value})}
+                  onChange={(e) => setTaskData({ ...taskData, longDesc: e.target.value })}
                   rows={3}
                 />
               </div>
@@ -437,7 +666,7 @@ export default function Home() {
                   type="datetime-local"
                   className="input input-bordered w-full"
                   value={taskData.deadline}
-                  onChange={(e) => setTaskData({...taskData, deadline: e.target.value})}
+                  onChange={(e) => setTaskData({ ...taskData, deadline: e.target.value })}
                   required
                 />
               </div>
@@ -468,6 +697,26 @@ export default function Home() {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modale de confirmation pour Drop me */}
+      {confirmDropOpen && (
+        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backdropFilter: 'blur(5px)' }}>
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96" style={{ borderStyle: "solid", borderColor: "black", borderWidth: "2px", }}>
+            <h2 className="text-xl font-bold mb-4 titlee1" style={{ paddingLeft: "10%" }}>Confirm list deletion</h2>
+            <p className="mb-6" style={{ fontFamily: 'Courier New' }}>
+              Are you sure you want to drop the list "{selectedList?.name}"?
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <button className="btn w-full" style={{ backgroundColor: 'red', color: 'white' }} onClick={handleDropList}>Confirm</button>
+              </div>
+              <div>
+                <button className="btn w-full" onClick={() => setConfirmDropOpen(false)}>Cancel</button>
+              </div>
+            </div>
           </div>
         </div>
       )}

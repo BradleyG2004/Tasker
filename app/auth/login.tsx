@@ -3,14 +3,82 @@ import { jwtDecode } from "jwt-decode";
 import { Link, useNavigate } from "react-router-dom";
 import toast from 'react-hot-toast';
 
+// Fonction utilitaire pour vérifier la validité d'un token
+const isTokenValid = (token: string): boolean => {
+  try {
+    const { exp } = jwtDecode<{ exp: number }>(token);
+    const now = Date.now() / 1000;
+    return exp > now;
+  } catch (err) {
+    console.log("Token invalide:", err);
+    return false;
+  }
+};
+
+// Fonction pour tenter de rafraîchir le token
+const tryRefreshToken = async (): Promise<string | null> => {
+  try {
+    const apiUrl = import.meta.env.VITE_REGISTER_URL as string;
+    const res = await fetch(`${apiUrl}/check_refresh`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      return data.accessToken;
+    }
+  } catch (err) {
+    console.log("Erreur lors du refresh token:", err);
+  }
+  return null;
+};
+
+// Hook pour vérifier l'authentification et rediriger si nécessaire
+const useRequireGuest = () => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        // 1. Vérifier le token existant
+        const existingToken = localStorage.getItem("accessToken");
+        
+        if (existingToken && isTokenValid(existingToken)) {
+          navigate("/");
+          return;
+        }
+
+        // 2. Tenter de rafraîchir le token
+        const newToken = await tryRefreshToken();
+        
+        if (newToken) {
+          localStorage.setItem("accessToken", newToken);
+          navigate("/");
+          return;
+        }
+
+        // 3. Aucun token valide trouvé - permettre l'accès à la page
+        setLoading(false);
+      } catch (error) {
+        console.error("Erreur lors de la vérification d'authentification:", error);
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, [navigate]);
+
+  return loading;
+};
 
 export default function LoginPage() {
-
     const navigate = useNavigate();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const loading = useRequireGuest();
 
     const onSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -47,52 +115,7 @@ export default function LoginPage() {
             });
     };
 
-    useEffect(() => {
-        const checkAuth = async () => {
-            const token = localStorage.getItem("accessToken");
-
-            if (token) {
-                try {
-                    const { exp } = jwtDecode<{ exp: number }>(token);
-                    const now = Date.now() / 1000;
-
-                    if (exp > now) {
-                        // Token valide → redirect home
-                        navigate("/");
-                        return;
-                    }
-                } catch (err) {
-                    console.log("Access token corrompu:", err);
-                }
-            }
-
-            // Sinon → tenter refresh
-            try {
-                const apiUrl = import.meta.env.VITE_REGISTER_URL as string;
-                const res = await fetch(`${apiUrl}/check_refresh`, {
-                    method: "GET",
-                    credentials: "include",
-                });
-
-                if (res.ok) {
-                    const data = await res.json();
-                    localStorage.setItem("accessToken", data.accessToken);
-                    // Token valide → redirect home
-                    navigate("/");
-                    return;
-                }
-            } catch (err) {
-                console.log("Erreur check_refresh:", err);
-            }
-
-            // Si on arrive ici → pas connecté → on laisse afficher la page login
-            setLoading(false);
-        };
-
-        checkAuth();
-    }, [navigate]);
-
-    // Pendant qu'on vérifie → afficher "Chargement"
+    // Afficher le chargement pendant la vérification
     if (loading) return <p>Chargement...</p>;
 
     return (

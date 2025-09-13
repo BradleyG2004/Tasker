@@ -20,6 +20,7 @@ export default function Home() {
   const [selectedList, setSelectedList] = useState<any>(null);
   const [tasks, setTasks] = useState<any[]>([]);
   const [achievedTasksOpen, setAchievedTasksOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<any>(null);
   const [taskData, setTaskData] = useState({
     shortDesc: "",
     longDesc: "",
@@ -171,8 +172,8 @@ export default function Home() {
 
       if (res.status === 200) {
         // Update local state
-        setTasks(prevTasks => 
-          prevTasks.map(task => 
+        setTasks(prevTasks =>
+          prevTasks.map(task =>
             task.id === taskId ? { ...task, isAchieved: !isAchieved } : task
           )
         );
@@ -268,9 +269,23 @@ export default function Home() {
   }
   return (
     <div
-      className="relative mx-auto flex items-center justify-center"
-      style={{ width: '80%', height: '90vh', margin: '5px auto', boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)', padding: '0px' }}
+      className="relative mx-auto flex items-center justify-center bg-gradient-to-br from-gray-50 to-white"
+      style={{
+        width: '1200px',
+        height: '800px',
+        margin: '50px auto',
+        borderRadius: '10px',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+        border: '1px solid rgba(0, 0, 0, 0.2)',
+        fontFamily: 'Courier New, Courier, monospace'
+      }}
     >
+      <div className="absolute top-1 right-5 text-2xl font-handwriting" style={{ margin: "10px" }}>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-10">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+        </svg>
+      </div>
+
       {/* Languette gauche */}
       <div
         className="fixed left-0 top-1/2 -translate-y-1/2 z-40 cursor-pointer bg-base-200 px-2 py-1 rounded-r-lg shadow-md flex items-center h-16"
@@ -289,7 +304,7 @@ export default function Home() {
 
       {/* Drawer gauche */}
       {leftOpen && (
-        <div className="fixed left-0 top-1/2 -translate-y-1/2 h-[60%] w-64 bg-base-100 shadow-lg z-50 p-4 rounded-br-2xl flex flex-col" style={{ borderStyle: "solid", borderColor: "black", borderWidth: "2px" }}>
+        <div className="fixed left-0 top-1/2 -translate-y-1/2 h-[25%] w-64 bg-base-100 shadow-lg z-50 p-4 rounded-br-2xl flex flex-col" style={{ borderStyle: "solid", borderColor: "black", borderWidth: "2px" }}>
           <div
             className="btn w-full mb-2" style={{ backgroundColor: 'black', color: 'white', fontFamily: 'Courier New' }}
           >
@@ -300,16 +315,18 @@ export default function Home() {
               <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
             </svg>
             </button>
-            <Select 
-              options={options} 
+            <Select
+              options={options}
               onChange={(selectedOption: any) => {
                 if (selectedOption) {
                   setSelectedList(selectedOption.value);
                   fetchTasks(selectedOption.value.id);
                   setAchievedTasksOpen(false);
+                  setSelectedTask(null);
                 } else {
                   setSelectedList(null);
                   setTasks([]);
+                  setSelectedTask(null);
                 }
               }}
               placeholder="Select a list..."
@@ -328,225 +345,393 @@ export default function Home() {
         </div>
       )}
 
-      {/* Drawer droit */}
+      {/* Drawer droit - Task Details */}
       {rightOpen && (
-        <div className="fixed right-0 top-1/2 -translate-y-1/2 h-[60%] w-64 bg-base-200 shadow-lg z-50 p-4 rounded-bl-2xl flex flex-col">
+        <div className="fixed right-0 top-1/2 -translate-y-1/2 h-[60%] w-80 bg-white shadow-lg z-50 p-4 rounded-bl-2xl flex flex-col border-2 border-black">
           <button
-            onClick={() => setRightOpen(false)}
+            onClick={() => {
+              setRightOpen(false);
+              setSelectedTask(null);
+            }}
             className="btn btn-sm mb-4 titlee"
-            style={{ boxShadow: "1px 1px 1px gray", backgroundColor: "white" }}
+            style={{ boxShadow: "1px 1px 1px gray", backgroundColor: "black", color: "white" }}
           >
             Close
           </button>
-          <ul className="menu">
-            <li><a>Item droit 1</a></li>
-            <li><a>Item droit 2</a></li>
-          </ul>
+
+          {selectedTask ? (
+            <div className="flex-1 overflow-y-auto" style={{ fontFamily: 'Courier New' }}>
+              <h2 className="text-2xl font-bold mb-4 text-center" style={{ color: 'black' }}>
+                Task Details
+              </h2>
+
+              <div className="space-y-4">
+                <div className="card bg-gray-50 shadow-sm border border-gray-300">
+                  <div className="card-body p-4">
+                    <h3 className="text-lg font-bold mb-2" style={{ color: 'black' }}>
+                      Short Description
+                    </h3>
+                    <p className="text-gray-700">{selectedTask.shortDesc}</p>
+                  </div>
+                </div>
+
+                {selectedTask.longDesc && (
+                  <div className="card bg-gray-50 shadow-sm border border-gray-300">
+                    <div className="card-body p-4">
+                      <h3 className="text-lg font-bold mb-2" style={{ color: 'black' }}>
+                        Long Description
+                      </h3>
+                      <p className="text-gray-700">{selectedTask.longDesc}</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="card bg-gray-50 shadow-sm border border-gray-300">
+                  <div className="card-body p-4">
+                    <h3 className="text-lg font-bold mb-2" style={{ color: 'black' }}>
+                      Due Date
+                    </h3>
+                    <p className="text-gray-700">
+                      {new Date(selectedTask.Deadline).toLocaleDateString()} at {new Date(selectedTask.Deadline).toLocaleTimeString()}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="card bg-gray-50 shadow-sm border border-gray-300">
+                  <div className="card-body p-4">
+                    <h3 className="text-lg font-bold mb-2" style={{ color: 'black' }}>
+                      Status
+                    </h3>
+                    <p className={`font-bold ${selectedTask.isAchieved ? 'text-green-600' : 'text-orange-600'}`}>
+                      {selectedTask.isAchieved ? '✅ Completed' : '⏳ In Progress'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="card bg-gray-50 shadow-sm border border-gray-300">
+                  <div className="card-body p-4">
+                    <h3 className="text-lg font-bold mb-2" style={{ color: 'black' }}>
+                      Created
+                    </h3>
+                    <p className="text-gray-700">
+                      {new Date(selectedTask.createdAt).toLocaleDateString()} at {new Date(selectedTask.createdAt).toLocaleTimeString()}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 mt-1">
+                  <button
+                    className="btn flex-1"
+                    onClick={async () => {
+                      try {
+                        const apiUrl = import.meta.env.VITE_REGISTER_URL as string;
+                        const accessToken = localStorage.getItem("accessToken");
+                        const res = await fetch(`${apiUrl}/task/${selectedTask.id}`, {
+                          method: "PATCH",
+                          headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${accessToken}`,
+                          },
+                          body: JSON.stringify({ isDeleted: true }),
+                          credentials: "include",
+                        });
+                        if (res.status === 200) {
+                          toast.success("Task deleted successfully");
+                          setSelectedTask(null);
+                          setRightOpen(false);
+                          if (selectedList) {
+                            fetchTasks(selectedList.id);
+                          }
+                        } else {
+                          const data = await res.json().catch(() => ({}));
+                          toast.error(data.error || "Failed to delete task");
+                        }
+                      } catch (err) {
+                        toast.error("Erreur lors de la suppression de la tâche");
+                      }
+                    }}
+                    style={{
+                      backgroundColor: 'red',
+                      color: 'white',
+                      fontFamily: 'Courier New'
+                    }}
+                  >
+                    Delete Task
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center" style={{ fontFamily: 'Courier New' }}>
+              <div className="text-center text-gray-500">
+                <div className="text-6xl mb-4">👆</div>
+                <h3 className="text-xl font-bold mb-2">No Task Selected</h3>
+                <p>Click on a task to view its details</p>
+              </div>
+            </div>
+          )}
         </div>
       )}
-      {/* Titre centré */}
-      <div className="absolute top-8 left-1/2 -translate-x-1/2 text-2xl font-handwriting shadow-md" style={{ borderRadius: "6px", width: "90%", padding: "10px", fontSize: "px", fontFamily: "courier new" }}>
+      {/* Header Section - iOS Style */}
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 w-full max-w-4xl px-6">
         {selectedList ? (
-          <>
-            <div style={{ textAlign: "center", display: "block" }}>
-              <ShimmeringText
-                text={selectedList.name}
-                duration={2}
-                wave={true}
-                shimmeringColor="hsl(var(--primary))"
-                style={{ fontSize: "30px", fontWeight: "bold" }}
-              />
+          <div className="bg-white/80 backdrop-blur-xl rounded-lg shadow-lg border-2 border-black p-2">
+            {/* List Title */}
+            <div className="text-center mb-4">
+              <h1 className="text-3xl font-semibold text-gray-900 mb-2">
+                <ShimmeringText
+                  text={selectedList?.name} // Ajout de l'opérateur de sécurité
+                  duration={2}
+                  wave={true}
+                  shimmeringColor="hsl(var(--primary))"
+                  style={{ fontSize: "32px", fontWeight: "600" }}
+                />
+              </h1>
+              <div className="w-16 h-1 bg-gray-200 rounded-full mx-auto"></div>
             </div>
-            <hr style={{ marginTop: "10px" }}></hr>
-            <div className="grid grid-cols-4 gap-2" style={{ marginTop: "10px" }}>
-              <div>
-                <b><span style={{ fontSize: "20px", fontWeight: "bold", color: "red" }}>Created at : </span>
+
+            {/* Stats Grid - iOS Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-gray-50/80 rounded-lg p-6 text-center border-2 border-black">
+                <div className="text-2xl font-bold text-gray-900 mb-1">
                   <ShimmeringText
-                    text={new Date(selectedList.createdAt).toLocaleDateString()}
+                    text={selectedList?.tasks ? selectedList.tasks.length.toString() : "0"} // Ajout de l'opérateur de sécurité
                     duration={2}
                     wave={true}
                     shimmeringColor="hsl(var(--primary))"
-                    style={{ fontSize: "20px", fontWeight: "bold" }}
+                    style={{ fontSize: "24px", fontWeight: "700" }}
                   />
-                </b>
+                </div>
+                <div className="text-sm text-gray-600 font-medium">Total Tasks</div>
               </div>
-              <div>
-                <b><span style={{ fontSize: "20px", fontWeight: "bold", color: "red" }}>Task Total : </span>
-                  <ShimmeringText
-                    text={selectedList.tasks ? selectedList.tasks.length.toString() : "0"}
-                    duration={2}
-                    wave={true}
-                    shimmeringColor="hsl(var(--primary))"
-                    style={{ fontSize: "20px", fontWeight: "bold" }}
-                  />
-                </b>
-              </div>
-               <div>
-                <b><span style={{ fontSize: "20px", fontWeight: "bold", color: "red" }}>Task Closed : </span>
+
+              <div className="bg-gray-50/80 rounded-lg p-6 text-center border-2 border-black">
+                <div className="text-2xl font-bold text-gray-700 mb-1">
                   <ShimmeringText
                     text={selectedList.tasks ? selectedList.tasks.filter((task: any) => task.isAchieved).length.toString() : "0"}
                     duration={2}
                     wave={true}
                     shimmeringColor="hsl(var(--primary))"
-                    style={{ fontSize: "20px", fontWeight: "bold" }}
+                    style={{ fontSize: "24px", fontWeight: "700" }}
                   />
-                </b>
+                </div>
+                <div className="text-sm text-gray-600 font-medium">Completed</div>
               </div>
-              <div>
-                <b><span style={{ fontSize: "20px", fontWeight: "bold", color: "red" }}>Task still open : </span>
+
+              <div className="bg-gray-50/80 rounded-lg p-6 text-center border-2 border-black">
+                <div className="text-2xl font-bold text-gray-700 mb-1">
                   <ShimmeringText
-                    text={selectedList.tasks ? (selectedList.tasks.length - selectedList.tasks.filter((task: any) => task.isAchieved).length).toString() : "0"}
+                    text={new Date(selectedList.createdAt).toLocaleDateString()}
                     duration={2}
                     wave={true}
                     shimmeringColor="hsl(var(--primary))"
-                    style={{ fontSize: "20px", fontWeight: "bold" }}
+                    style={{ fontSize: "20px", fontWeight: "600" }}
                   />
-                </b>
+                </div>
+                <div className="text-sm text-gray-600 mb-1">Created</div>
+              </div>
+
+              <div className="bg-gray-50/80 rounded-lg p-1 text-center border-2 border-black" style={{padding:"10px"}}>
+                <button
+                  className={`btn px-4 py-2 font-semibold text-white shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2 ${selectedList
+                    ? 'bg-black'
+                    : 'bg-gray-400 cursor-not-allowed'
+                    }`}
+                  disabled={!selectedList}
+                  onClick={() => setTaskModalOpen(true)}
+                  style={{width:"100%"}}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  New Task
+                </button>
+                <button
+                  className={`btn px-4 py-2 font-semibold shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2 ${selectedList
+                    ? 'bg-red-500 text-white'
+                    : 'bg-gray-400 text-white cursor-not-allowed'
+                    }`}
+                  disabled={!selectedList}
+                  onClick={() => setConfirmDropOpen(true)}
+                  style={{width:"100%",marginTop:"10px"}}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Delete List
+                </button>
               </div>
             </div>
-          </>
+          </div>
         ) : (
-          <>
-            <b style={{ textAlign: "center", color: "red", fontSize: "20px", fontWeight: "bold", display: "block" }}>
-              <ShimmeringText
-                text="Select a list in the left menu"
-                duration={2}
-                wave={true}
-                shimmeringColor="hsl(var(--primary))"
-                style={{ fontSize: "20px", fontWeight: "bold" }}
-              /></b>
-            <hr style={{ marginTop: "10px" }}></hr>
-            <div className="grid grid-cols-4 gap-2" style={{ marginTop: "10px" }}>
-              <div>
-                <b>Created at : -</b>
-              </div>
-              <div>
-                <b>Task Total : 0</b>
-              </div>
-               <div>
-                <b>Task Closed : 0</b>
-              </div>
-              <div>
-                <b>Task still open : 0</b>
-              </div>
+          <div className="bg-white/80 backdrop-blur-xl rounded-lg shadow-lg border-2 border-black p-8 text-center">
+            <div className="text-gray-500 mb-4">
+              <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
             </div>
-          </>
+            <h2 className="text-xl font-semibold text-gray-700 mb-2">No List Selected</h2>
+            <p className="text-gray-500">Choose a list from the left menu to get started</p>
+          </div>
         )}
       </div>
-      
-      {/* Task Display Grid - Side by side layout with fixed dimensions */}
+
+      {/* Task Display Grid - Modern iOS Style */}
       {selectedList && (
-        <div className="mt-8" style={{ width: '90%', margin: '20px auto' }}>
-          <div className="flex gap-6" style={{ height: '500px' }}>
+        <div className="absolute top-80 left-1/2 -translate-x-1/2 w-full max-w-6xl px-6 pb-20">
+          <div className="flex gap-8">
             {/* Active Tasks - Left side */}
-            <div className="flex-1 flex flex-col" style={{ marginTop: '40px' }}>
-              <div 
-                className="flex-1 overflow-y-auto pr-2"
-                style={{ 
+            <div className="flex-1">
+              <div className="mb-6">
+                <h2 className="text-2xl font-semibold text-gray-900 mb-2">Active Tasks</h2>
+                <div className="w-12 h-1 bg-gray-200 rounded-full"></div>
+              </div>
+
+              <div
+                className="grid grid-cols-2 gap-4 overflow-y-scroll pr-2" // Ajout de scroll vertical
+                style={{
+                  height: '180px', // Hauteur fixe
                   scrollbarWidth: 'thin',
-                  scrollbarColor: '#cbd5e0 #f7fafc'
+                  scrollbarColor: '#e5e7eb #f9fafb'
                 }}
               >
-                <div className="grid grid-cols-2 gap-4">
-                  {tasks.filter(task => !task.isAchieved).map((task) => (
-                    <div key={task.id} className="card bg-white shadow-md border-2 border-gray-200">
-                      <div className="card-body p-4">
-                        <h4 className="card-title text-lg font-bold" style={{ fontFamily: 'Courier New' }}>
-                          {task.shortDesc}
-                        </h4>
-                        {task.longDesc && (
-                          <p className="text-sm text-gray-600 mb-2" style={{ fontFamily: 'Courier New' }}>
-                            {task.longDesc}
-                          </p>
-                        )}
-                        <p className="text-xs text-gray-500 mb-3" style={{ fontFamily: 'Courier New' }}>
-                          Due: {new Date(task.Deadline).toLocaleDateString()} {new Date(task.Deadline).toLocaleTimeString()}
-                        </p>
-                        <div className="card-actions justify-end">
-                          <button
-                            className="btn btn-sm btn-success"
-                            onClick={() => toggleTaskAchievement(task.id, task.isAchieved)}
-                            style={{ fontFamily: 'Courier New' }}
-                          >
-                            Mark as Done
-                          </button>
-                        </div>
-                      </div>
+                {tasks.filter(task => !task.isAchieved).map((task) => (
+                  <div
+                    key={task.id}
+                    className={`bg-white/90 backdrop-blur-sm rounded-lg border-2 p-6 cursor-pointer hover:shadow-lg transition-all duration-200 group ${selectedTask?.id === task.id ? 'border-green-500' : 'border-black' // Highlight si sélectionnée
+                      }`}
+                    onClick={() => setSelectedTask(task)}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="text-lg font-semibold text-gray-900 group-hover:text-gray-700 transition-colors">
+                        {task.shortDesc}
+                      </h3>
+                      <div className="w-2 h-2 bg-orange-400 rounded-full flex-shrink-0 mt-2"></div>
                     </div>
-                  ))}
-                </div>
+                    {task.longDesc && (
+                      <p className="text-gray-600 text-sm mb-4 leading-relaxed">
+                        {task.longDesc}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center text-xs text-gray-500">
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {new Date(task.Deadline).toLocaleDateString()} • {new Date(task.Deadline).toLocaleTimeString()}
+                      </div>
+                      <button
+                        className="btn text-white px-4 py-2 text-sm font-medium transition-colors duration-200 flex items-center gap-2"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleTaskAchievement(task.id, task.isAchieved);
+                        }}
+                        style={{color:"black"}}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Complete
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
             {/* Completed Tasks - Right side */}
-            <div className="w-80 flex flex-col" style={{ marginTop: '40px' }}>
-              <div 
-                className="bg-white rounded-lg shadow-md border-2 border-gray-200 flex flex-col transition-all duration-300 ease-in-out"
-                style={{ 
-                  height: achievedTasksOpen ? '300px' : '60px',
-                  overflow: 'hidden'
+            <div className="w-80">
+              <div className="mb-6">
+                <h2 className="text-2xl font-semibold text-gray-900 mb-2">Completed</h2>
+              </div>
+
+              <div
+                className="bg-white/90 backdrop-blur-sm rounded-lg border-2 border-black overflow-hidden transition-all duration-300 ease-in-out relative z-20"
+                style={{
+                  height: achievedTasksOpen ? '500px' : '60px'
                 }}
               >
-                <div 
-                  className="p-4 cursor-pointer flex justify-between items-center flex-shrink-0"
+                <div
+                  className="p-2 cursor-pointer flex justify-between items-center hover:bg-gray-50/50 transition-colors"
                   onClick={() => setAchievedTasksOpen(!achievedTasksOpen)}
-                  style={{ fontFamily: 'Courier New' }}
                 >
-                  <h3 className="text-xl font-bold">
-                    Completed Tasks ({tasks.filter(task => task.isAchieved).length})
-                  </h3>
-                  <button className="btn btn-circle btn-sm">
-                    <svg 
-                      className={`w-4 h-4 transition-transform ${achievedTasksOpen ? 'rotate-180' : ''}`} 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">
+                        {tasks.filter(task => task.isAchieved).length} Completed
+                      </h3>
+                      <p className="text-xs text-gray-500">Tap to {achievedTasksOpen ? 'hide' : 'view'}</p>
+                    </div>
+                  </div>
+
+                  <svg
+                    className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${achievedTasksOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </div>
-                <div 
-                  className="border-t border-gray-200 p-4 flex-1 overflow-y-auto"
-                  style={{ 
-                    scrollbarWidth: 'thin',
-                    scrollbarColor: '#cbd5e0 #f7fafc',
-                    opacity: achievedTasksOpen ? 1 : 0,
-                    transition: 'opacity 0.3s ease-in-out'
-                  }}
+
+                <div
+                  className=" p-4"
                 >
                   {tasks.filter(task => task.isAchieved).length > 0 ? (
-                    <div className="space-y-4">
+                    <div
+                      className="space-y-3"
+                      style={
+                        achievedTasksOpen
+                          ? {
+                            position: 'absolute',
+                            transition: 'all 0.3s',
+                          }
+                          : {}
+                      }
+                    >
                       {tasks.filter(task => task.isAchieved).map((task) => (
-                        <div key={task.id} className="card bg-gray-50 shadow-sm border border-gray-300">
-                          <div className="card-body p-4">
-                            <h4 className="card-title text-lg font-bold line-through text-gray-600" style={{ fontFamily: 'Courier New' }}>
+                        <div key={task.id} className="bg-gray-50/80 rounded-lg p-4 border-2 border-black">
+                          <div className="flex items-start justify-between mb-2">
+                            <h4 className="text-sm font-medium text-gray-600 line-through">
                               {task.shortDesc}
                             </h4>
-                            {task.longDesc && (
-                              <p className="text-sm text-gray-500 mb-2 line-through" style={{ fontFamily: 'Courier New' }}>
-                                {task.longDesc}
-                              </p>
-                            )}
-                            <p className="text-xs text-gray-400 mb-3" style={{ fontFamily: 'Courier New' }}>
-                              Completed: {new Date(task.Deadline).toLocaleDateString()}
+                            <div className="w-2 h-2 bg-green-400 rounded-full flex-shrink-0 mt-1"></div>
+                          </div>
+                          {task.longDesc && (
+                            <p className="text-xs text-gray-500 mb-3 line-through leading-relaxed">
+                              {task.longDesc}
                             </p>
-                            <div className="card-actions justify-end">
-                              <button
-                                className="btn btn-sm btn-warning"
-                                onClick={() => toggleTaskAchievement(task.id, task.isAchieved)}
-                                style={{ fontFamily: 'Courier New' }}
-                              >
-                                Mark as Undone
-                              </button>
+                          )}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center text-xs text-gray-400">
+                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              Completed {new Date(task.Deadline).toLocaleDateString()}
                             </div>
+                            <button
+                              className="bg-orange-100 hover:bg-orange-200 text-orange-700 px-3 py-1 rounded-md text-xs font-medium transition-colors duration-200"
+                              onClick={() => toggleTaskAchievement(task.id, task.isAchieved)}
+                            >
+                              Reopen
+                            </button>
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center text-gray-500" style={{ fontFamily: 'Courier New' }}>
-                      No completed tasks
+                    <div className="text-center py-8">
+                      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <p className="text-gray-500 text-sm">No completed tasks yet</p>
                     </div>
                   )}
                 </div>
@@ -556,43 +741,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* Buttons positioned at bottom right */}
-      <div className="absolute bottom-4 right-4 flex gap-4">
-        <button
-          className="btn titlee2"
-          type="submit"
-          style={{
-            backgroundColor: selectedList ? 'black' : 'gray',
-            color: 'white',
-            width: '150px',
-            cursor: selectedList ? 'pointer' : 'not-allowed'
-          }}
-          disabled={!selectedList}
-          onClick={() => setTaskModalOpen(true)}
-        >
-          New task
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
-        </svg>
-        </button>
-        <button
-          className="btn titlee2"
-          type="button"
-          style={{
-            color: selectedList ? 'red' : 'white',
-            backgroundColor: selectedList ? undefined : 'gray',
-            width: '150px',
-            cursor: selectedList ? 'pointer' : 'not-allowed'
-          }}
-          disabled={!selectedList}
-          onClick={() => setConfirmDropOpen(true)}
-        >
-          Drop me
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
-          <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-        </svg>
-        </button>
-      </div>
 
       {/* Modale pour créer une liste */}
       {modalOpen && (

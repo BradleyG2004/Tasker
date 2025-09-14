@@ -26,6 +26,39 @@ export default function Home() {
     longDesc: "",
     deadline: ""
   });
+  const [user, setUser] = useState<any>(null);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      const apiUrl = import.meta.env.VITE_REGISTER_URL as string;
+      const accessToken = localStorage.getItem("accessToken");
+
+      // Appel à l'endpoint PATCH token pour invalider le token
+      await fetch(`${apiUrl}/token`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        credentials: "include",
+      });
+
+      // Supprime le token du localStorage
+      localStorage.removeItem("accessToken");
+      setUser(null);
+      setProfileDropdownOpen(false);
+
+      // Redirige vers la page de login
+      navigate("/auth/login");
+    } catch (err) {
+      console.log("Erreur lors de la déconnexion:", err);
+      // Même en cas d'erreur, on supprime le token local et on redirige
+      localStorage.removeItem("accessToken");
+      setUser(null);
+      navigate("/auth/login");
+    }
+  };
 
   const handleDropList = async () => {
     if (!selectedList) {
@@ -69,6 +102,23 @@ export default function Home() {
           const now = Date.now() / 1000;
 
           if (exp > now) {
+            // Token valide, décoder les données utilisateur depuis le token
+            try {
+              const decodedToken = jwtDecode<any>(token);
+              if (decodedToken.name && decodedToken.surname) {
+                const userData = {
+                  id: decodedToken.userId,
+                  email: decodedToken.email,
+                  name: decodedToken.name,
+                  surname: decodedToken.surname
+                };
+                setUser(userData);
+                // alert(`Welcome back, ${decodedToken.name} ${decodedToken.surname}`);
+              }
+            } catch (err) {
+              console.log("Erreur lors du décodage du token:", err);
+            }
+
             setLoading(false); // Token encore valide
             return;
           }
@@ -85,11 +135,24 @@ export default function Home() {
           credentials: "include", // envoie le cookie HttpOnly
         });
 
-        if (res.status == 200) {
+        if (res.status === 200) {
           const data = await res.json();
           localStorage.setItem("accessToken", data.accessToken);
-          setLoading(false);
-          return;
+          
+          // Decode the new access token to get user data
+          const decodedToken = jwtDecode<any>(data.accessToken);
+          if (decodedToken.name && decodedToken.surname) {
+            const userData = {
+              id: decodedToken.userId,
+              email: decodedToken.email,
+              name: decodedToken.name,
+              surname: decodedToken.surname
+            };
+            setUser(userData);
+            // alert(`Welcome back, ${userData.name} ${userData.surname}`);
+            setLoading(false);
+            return;
+          }
         }
       } catch (err) {
         console.log("Erreur check_refresh:", err);
@@ -190,6 +253,21 @@ export default function Home() {
     fetchTaskLists();
   }, []);
 
+  // Fermer le dropdown quand on clique en dehors
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (profileDropdownOpen && !target.closest('.profile-dropdown')) {
+        setProfileDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [profileDropdownOpen]);
+
   const handleRegisterList = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -280,12 +358,6 @@ export default function Home() {
         fontFamily: 'Courier New, Courier, monospace'
       }}
     >
-      <div className="absolute top-1 right-5 text-2xl font-handwriting" style={{ margin: "10px" }}>
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-10">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-        </svg>
-      </div>
-
       {/* Languette gauche */}
       <div
         className="fixed left-0 top-1/2 -translate-y-1/2 z-40 cursor-pointer bg-base-200 px-2 py-1 rounded-r-lg shadow-md flex items-center h-16"
@@ -472,8 +544,81 @@ export default function Home() {
           )}
         </div>
       )}
+      {/* Profile Dropdown - Positioned at top right of main container */}
+      <div className="absolute top-4 right-4 z-50 profile-dropdown">
+        <button
+          className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-lg border-2 border-black shadow-lg hover:shadow-xl transition-all duration-200"
+          onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          <span className="font-semibold">Profile</span>
+          <svg
+            className={`w-4 h-4 transition-transform duration-200 ${profileDropdownOpen ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {/* Dropdown Menu */}
+        {profileDropdownOpen && (
+          <div className="absolute top-full right-0 mt-2 w-72 bg-white/95 backdrop-blur-sm rounded-lg border-2 border-black shadow-xl transform translate-x-4">
+            <div className="p-4">
+              {/* User Info */}
+              {user ? (
+                <div className="mb-4 pb-4 border-b border-gray-200">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <svg className="w-7 h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 text-lg truncate">
+                        {user.name} {user.surname}
+                      </h3>
+                      <p className="text-sm text-gray-600 truncate">{user.email}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-4 pb-4 border-b border-gray-200">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <svg className="w-7 h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 text-lg">Loading...</h3>
+                      <p className="text-sm text-gray-600">User data loading</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Disconnect Button */}
+              <button
+                className="w-full px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold transition-colors duration-200 flex items-center justify-center gap-2"
+                onClick={handleLogout}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Disconnect
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Header Section - iOS Style */}
       <div className="absolute top-6 left-1/2 -translate-x-1/2 w-full max-w-4xl px-6">
+
         {selectedList ? (
           <div className="bg-white/80 backdrop-blur-xl rounded-lg shadow-lg border-2 border-black p-2">
             {/* List Title */}
@@ -531,7 +676,7 @@ export default function Home() {
                 <div className="text-sm text-gray-600 mb-1">Created</div>
               </div>
 
-              <div className="bg-gray-50/80 rounded-lg p-1 text-center border-2 border-black" style={{padding:"10px"}}>
+              <div className="bg-gray-50/80 rounded-lg p-1 text-center border-2 border-black" style={{ padding: "10px" }}>
                 <button
                   className={`btn px-4 py-2 font-semibold text-white shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2 ${selectedList
                     ? 'bg-black'
@@ -539,7 +684,7 @@ export default function Home() {
                     }`}
                   disabled={!selectedList}
                   onClick={() => setTaskModalOpen(true)}
-                  style={{width:"100%"}}
+                  style={{ width: "100%" }}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -553,7 +698,7 @@ export default function Home() {
                     }`}
                   disabled={!selectedList}
                   onClick={() => setConfirmDropOpen(true)}
-                  style={{width:"100%",marginTop:"10px"}}
+                  style={{ width: "100%", marginTop: "10px" }}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -626,7 +771,7 @@ export default function Home() {
                           e.stopPropagation();
                           toggleTaskAchievement(task.id, task.isAchieved);
                         }}
-                        style={{color:"black"}}
+                        style={{ color: "black" }}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

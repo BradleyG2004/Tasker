@@ -30,19 +30,33 @@ export default function Home() {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
   const handleLogout = async () => {
+    console.log("Logout attempt");
     try {
       const apiUrl = import.meta.env.VITE_REGISTER_URL as string;
       const accessToken = localStorage.getItem("accessToken");
 
+      console.log("Logout attempt - API URL:", apiUrl);
+      console.log("Logout attempt - Access Token:", accessToken ? "Present" : "Missing");
+
       // Appel à l'endpoint PATCH token pour invalider le token
-      await fetch(`${apiUrl}/token`, {
-        method: "PATCH",
+      const response = await fetch(`${apiUrl}/logout`, {
+        method: "DELETE",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
         credentials: "include",
       });
+
+      console.log("Logout response status:", response.status);
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Logout success:", result);
+      } else {
+        const error = await response.text();
+        console.log("Logout error:", error);
+      }
 
       // Supprime le token du localStorage
       localStorage.removeItem("accessToken");
@@ -138,7 +152,7 @@ export default function Home() {
         if (res.status === 200) {
           const data = await res.json();
           localStorage.setItem("accessToken", data.accessToken);
-          
+
           // Decode the new access token to get user data
           const decodedToken = jwtDecode<any>(data.accessToken);
           if (decodedToken.name && decodedToken.surname) {

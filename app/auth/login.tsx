@@ -130,6 +130,7 @@ export default function LoginPage() {
                             <span className="label-text">Email</span>
                         </label>
                         <input
+                            required
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             type="text"
@@ -143,6 +144,7 @@ export default function LoginPage() {
                         </label>
                         <div className="relative">
                             <input
+                                required
                                 type={showPassword ? 'text' : 'password'}
                                 placeholder="********"
                                 className="input input-bordered w-full pr-10"

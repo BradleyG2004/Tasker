@@ -910,6 +910,7 @@ export default function Home() {
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-2">List name </label>
                 <input
+                  required
                   type="text"
                   className="input input-bordered w-full"
                   placeholder="Enter list name"
@@ -947,6 +948,7 @@ export default function Home() {
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-2">Short description *</label>
                 <input
+                  required
                   type="text"
                   className="input input-bordered w-full"
                   placeholder="Enter short description"

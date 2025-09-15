@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
-import { Link, redirect, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import toast, { Toaster } from 'react-hot-toast';
 
 export function useRequireGuest() {
@@ -126,6 +126,7 @@ export default function RegisterPage() {
               <span className="label-text">Name</span>
             </label>
             <input
+              required
               value={name}
               onChange={(e) => setName(e.target.value)}
               type="text"
@@ -138,6 +139,7 @@ export default function RegisterPage() {
               <span className="label-text">Surname</span>
             </label>
             <input
+              required
               value={surname}
               onChange={(e) => setSurname(e.target.value)}
               type="text"
@@ -152,6 +154,7 @@ export default function RegisterPage() {
                   <span className="label-text">Email</span>
                 </label>
                 <input
+                  required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   type="email"
@@ -164,6 +167,7 @@ export default function RegisterPage() {
                   <span className="label-text">Confirmation</span>
                 </label>
                 <input
+                  required
                   value={emailConf}
                   onChange={(e) => setEmailConf(e.target.value)}
                   type="email"
@@ -182,6 +186,7 @@ export default function RegisterPage() {
                 </label>
                 <div className="relative">
                   <input
+                    required
                     type={showPassword ? "text" : "password"}
                     placeholder="********"
                     className="input input-bordered w-full pr-10"
@@ -205,6 +210,7 @@ export default function RegisterPage() {
                 </label>
                 <div className="relative">
                   <input
+                    required
                     type={showPasswordConf ? "text" : "password"}
                     placeholder="********"
                     className="input input-bordered w-full pr-10"

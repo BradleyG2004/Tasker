@@ -1,87 +1,74 @@
-# Welcome to React Router!
+📝 Tasker - SAEGUS Technical Test
+📌 Description
 
-A modern, production-ready template for building full-stack React applications using React Router.
+Ce projet est une application de gestion de tâches inspirée de Wunderlist ou Google Tasks.
+Elle permet aux utilisateurs de :
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
+Créer et gérer des listes de tâches.
 
-## Features
+Ajouter, modifier, compléter ou supprimer des tâches.
 
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
+S’authentifier via un système sécurisé avec JWT.
 
-## Getting Started
+L’application est découpée en deux sections principales :
 
-### Installation
+Page d’authentification (connexion / inscription).
 
-Install the dependencies:
+Page principale (sidebar gauche, contenu central, sidebar droite).
 
-```bash
-npm install
-```
 
-### Development
+🚀 Technologies utilisées
+Frontend
 
-Start the development server with HMR:
+React.js
 
-```bash
-npm run dev
-```
+DaisyUI (basé sur Tailwind CSS) pour le design et les composants UI
 
-Your application will be available at `http://localhost:5173`.
+React Router pour la navigation
 
-## Building for Production
+⚙️ Fonctionnalités
+🔑 Authentification
 
-Create a production build:
+Connexion avec username / mot de passe.
 
-```bash
-npm run build
-```
+Inscription avec nom, prénom, email, mot de passe (+ vérification).
 
-## Deployment
+Gestion de session sécurisée via JWT.
 
-### Docker Deployment
+📋 Gestion des listes
 
-To build and run using Docker:
+Créer une nouvelle liste (nom unique).
 
-```bash
-docker build -t my-app .
+Afficher toutes les listes.
 
-# Run the container
-docker run -p 3000:3000 my-app
-```
+Sélectionner une liste pour voir son contenu.
 
-The containerized application can be deployed to any platform that supports Docker, including:
+Supprimer une liste (avec confirmation).
 
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
+✅ Gestion des tâches
 
-### DIY Deployment
+Ajouter une tâche avec :
 
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
+Courte description (obligatoire)
 
-Make sure to deploy the output of `npm run build`
+Description longue (optionnelle)
 
-```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
-```
+Date d’échéance (obligatoire)
 
-## Styling
+Marquer une tâche comme complétée / revenir en "à faire".
 
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
+Voir l’historique des tâches complétées.
 
----
+Supprimer une tâche (avec confirmation).
 
-Built with ❤️ using React Router.
+🖼 UI
+
+Sidebar gauche : navigation entre les listes.
+
+Contenu principal : affichage des tâches.
+
+Sidebar droite : détails d’une tâche.
+
+Sidebars rétractables.
+
+Messages clairs si aucune liste/tâche n’est sélectionnée.

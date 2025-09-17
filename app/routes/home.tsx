@@ -271,8 +271,19 @@ export default function Home() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
+
+      // Close profile dropdown if open and click is outside
       if (profileDropdownOpen && !target.closest('.profile-dropdown')) {
         setProfileDropdownOpen(false);
+      }
+
+      // Close right drawer if open and click is outside, except on active tasks
+      if (
+        rightOpen &&
+        !target.closest('.right-drawer') &&
+        !target.closest('.active-task')
+      ) {
+        setRightOpen(false);
       }
     };
 
@@ -280,7 +291,7 @@ export default function Home() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [profileDropdownOpen]);
+  }, [profileDropdownOpen, rightOpen]);
 
   const handleRegisterList = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -479,17 +490,6 @@ export default function Home() {
                     </h3>
                     <p className="text-gray-700">
                       {new Date(selectedTask.Deadline).toLocaleDateString()} at {new Date(selectedTask.Deadline).toLocaleTimeString()}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="card bg-gray-50 shadow-sm border border-gray-300">
-                  <div className="card-body p-4">
-                    <h3 className="text-lg font-bold mb-2" style={{ color: 'black' }}>
-                      Status
-                    </h3>
-                    <p className={`font-bold ${selectedTask.isAchieved ? 'text-green-600' : 'text-orange-600'}`}>
-                      {selectedTask.isAchieved ? '✅ Completed' : '⏳ In Progress'}
                     </p>
                   </div>
                 </div>
@@ -735,7 +735,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* Task Display Grid - Modern iOS Style */}
+      {/* Task Display Grid */}
       {selectedList && (
         <div className="absolute top-80 left-1/2 -translate-x-1/2 w-full max-w-6xl px-6 pb-20">
           <div className="flex gap-8">
@@ -757,8 +757,7 @@ export default function Home() {
                 {tasks.filter(task => !task.isAchieved).map((task) => (
                   <div
                     key={task.id}
-                    className={`bg-white/90 backdrop-blur-sm rounded-lg border-2 p-6 cursor-pointer hover:shadow-lg transition-all duration-200 group ${selectedTask?.id === task.id ? 'border-green-500' : 'border-black' // Highlight si sélectionnée
-                      }`}
+                    className={`active-task bg-white/90 backdrop-blur-sm rounded-lg border-2 p-6 cursor-pointer hover:shadow-lg transition-all duration-200 group ${selectedTask?.id === task.id ? 'border-green-500' : 'border-black'}`}
                     onClick={() => setSelectedTask(task)}
                   >
                     <div className="flex items-start justify-between mb-3">
@@ -798,7 +797,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Completed Tasks - Right side */}
+            {/* Completed Tasks */}
             <div className="w-80">
               <div className="mb-6">
                 <h2 className="text-2xl font-semibold text-gray-900 mb-2">Completed</h2>
@@ -948,7 +947,6 @@ export default function Home() {
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-2">Short description *</label>
                 <input
-                  required
                   type="text"
                   className="input input-bordered w-full"
                   placeholder="Enter short description"
